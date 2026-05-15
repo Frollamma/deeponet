@@ -7,10 +7,17 @@ import itertools
 import numpy as np
 import tensorflow as tf
 
-import deepxde as dde
 from spaces import FinitePowerSeries, FiniteChebyshev, GRF
 from system import LTSystem, ODESystem, DRSystem, CVCSystem, ADVDSystem
 from utils import merge_values, trim_to_65535, mean_squared_error_outlier, safe_test
+
+import os
+
+os.environ["DDE_BACKEND"] = (
+    "tensorflow.compat.v1"  # It's needed for use_bias and stacked params in DeepONet class  # This needs to be before the deepxde import
+)
+
+import deepxde as dde
 
 
 def test_u_lt(nn, system, T, m, model, data, u, fname):
@@ -158,7 +165,7 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
     X_test_trim = trim_to_65535(X_test)[0]
     y_test_trim = trim_to_65535(y_test)[0]
     if nn == "opnn":
-        data = dde.data.OpDataSet(
+        data = dde.data.Triple(
             X_train=X_train, y_train=y_train, X_test=X_test_trim, y_test=y_test_trim
         )
     else:
@@ -275,6 +282,8 @@ def main():
             [dim_x, 40, 40],
             activation,
             initializer,
+            use_bias=True,
+            stacked=False,
         )
     elif nn == "fnn":
         net = dde.nn.FNN([m + dim_x] + [100] * 2 + [1], activation, initializer)
