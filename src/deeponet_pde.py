@@ -144,8 +144,10 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
         X_train = merge_values(X_train)
         X_test = merge_values(X_test)
 
-    # np.savez_compressed("train.npz", X_train0=X_train[0], X_train1=X_train[1], y_train=y_train)
-    # np.savez_compressed("test.npz", X_test0=X_test[0], X_test1=X_test[1], y_test=y_test)
+    np.savez_compressed(
+        "train.npz", X_train0=X_train[0], X_train1=X_train[1], y_train=y_train
+    )
+    np.savez_compressed("test.npz", X_test0=X_test[0], X_test1=X_test[1], y_test=y_test)
     # return
 
     # d = np.load("train.npz")
@@ -170,7 +172,10 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
         "model/model.ckpt", save_better_only=True, period=1000
     )
     losshistory, train_state = model.train(epochs=epochs, callbacks=[checker])
-    print("# Parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+    print(
+        "# Parameters:",
+        np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]),
+    )
     dde.saveplot(losshistory, train_state, issave=True, isplot=True)
 
     model.restore("model/model.ckpt-" + str(train_state.best_step), verbose=1)
@@ -265,18 +270,16 @@ def main():
     initializer = "Glorot normal"  # "He normal" or "Glorot normal"
     dim_x = 1 if problem in ["ode", "lt"] else 2
     if nn == "opnn":
-        net = dde.maps.OpNN(
+        net = dde.nn.DeepONet(
             [m, 40, 40],
             [dim_x, 40, 40],
             activation,
             initializer,
-            use_bias=True,
-            stacked=False,
         )
     elif nn == "fnn":
-        net = dde.maps.FNN([m + dim_x] + [100] * 2 + [1], activation, initializer)
+        net = dde.nn.FNN([m + dim_x] + [100] * 2 + [1], activation, initializer)
     elif nn == "resnet":
-        net = dde.maps.ResNet(m + dim_x, 1, 128, 2, activation, initializer)
+        net = dde.nn.ResNet(m + dim_x, 1, 128, 2, activation, initializer)
 
     run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test)
 
