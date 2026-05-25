@@ -7,6 +7,7 @@ import time
 from functools import wraps
 
 import numpy as np
+from scipy.integrate import trapezoid
 
 
 def timing(f):
@@ -65,8 +66,7 @@ def safe_test(model, data, X_test, y_test, fname=None):
 
 
 def eig(kernel, num, Nx, eigenfunction=True):
-    """Compute the eigenvalues and eigenfunctions of a kernel on [0, 1].
-    """
+    """Compute the eigenvalues and eigenfunctions of a kernel on [0, 1]."""
     h = 1 / (Nx - 1)
     c = kernel(np.linspace(0, 1, num=Nx)[:, None])[0] * h
     A = np.empty((Nx, Nx))
@@ -84,7 +84,7 @@ def eig(kernel, num, Nx, eigenfunction=True):
     idx = np.flipud(np.argsort(eigval))[:num]
     eigval, eigvec = eigval[idx], eigvec[:, idx]
     for i in range(num):
-        eigvec[:, i] /= np.trapz(eigvec[:, i] ** 2, dx=h) ** 0.5
+        eigvec[:, i] /= trapezoid(eigvec[:, i] ** 2, dx=h) ** 0.5
     return eigval, eigvec
 
 
