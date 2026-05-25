@@ -101,20 +101,30 @@ def lt_system(npoints_output):
     return LTSystem(npoints_output)
 
 
-def ode_system(T):
-    """ODE"""
-
+def ode_antiderivative(T):
     def g(s, u, x):
-        # Antiderivative
         return u
-        # Nonlinear ODE
-        # return -s**2 + u
-        # Gravity pendulum
-        # k = 1
-        # return [s[1], - k * np.sin(s[0]) + u]
 
     s0 = [0]
-    # s0 = [0, 0]  # Gravity pendulum
+
+    return ODESystem(g, s0, T)
+
+
+def ode_nonlinear(T):
+    def g(s, u, x):
+        return -(s**2) + u
+
+    s0 = [0]
+
+    return ODESystem(g, s0, T)
+
+
+def ode_pendulum(T):
+    def g(s, u, x):
+        k = 1
+        return [s[1], -k * np.sin(s[0]) + u]
+
+    s0 = [0, 0]
     return ODESystem(g, s0, T)
 
 
@@ -142,7 +152,7 @@ def advd_system(T, npoints_output):
     return ADVDSystem(f, g, T, Nt, npoints_output)
 
 
-def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
+def gen_data(system, space, m, nn, num_train, num_test):
     # space_test = GRF(1, length_scale=0.1, N=1000, interp="cubic")
 
     X_train, y_train = system.gen_operator_data(space, m, num_train)
@@ -155,12 +165,13 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
         "train.npz", X_train0=X_train[0], X_train1=X_train[1], y_train=y_train
     )
     np.savez_compressed("test.npz", X_test0=X_test[0], X_test1=X_test[1], y_test=y_test)
-    # return
 
-    # d = np.load("train.npz")
-    # X_train, y_train = (d["X_train0"], d["X_train1"]), d["y_train"]
-    # d = np.load("test.npz")
-    # X_test, y_test = (d["X_test0"], d["X_test1"]), d["y_test"]
+
+def train(problem, system, space, T, m, nn, net, lr, epochs):
+    d = np.load("train.npz")
+    X_train, y_train = (d["X_train0"], d["X_train1"]), d["y_train"]
+    d = np.load("test.npz")
+    X_test, y_test = (d["X_test0"], d["X_test1"]), d["y_test"]
 
     X_test_trim = trim_to_65535(X_test)[0]
     y_test_trim = trim_to_65535(y_test)[0]
@@ -236,17 +247,26 @@ def run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test):
 def main():
     # Problems:
     # - "lt": Legendre transform
-    # - "ode": Antiderivative, Nonlinear ODE, Gravity pendulum
+    # - "ode", with ode_type:
+    #   - "antiderivative": Antiderivative
+    #   - "nonlinear": Nonlinear ODE
+    #   - "pendulum": Gravity pendulum
     # - "dr": Diffusion-reaction
     # - "cvc": Advection
     # - "advd": Advection-diffusion
     problem = "ode"
+    ode_type = "antiderivative"
+    ODES = {
+        "antiderivative": ode_antiderivative,
+        "nonlinear": ode_nonlinear,
+        "pendulum": ode_pendulum,
+    }
     T = 1
     if problem == "lt":
         npoints_output = 20
         system = lt_system(npoints_output)
     elif problem == "ode":
-        system = ode_system(T)
+        system = ODES[ode_type](T)
     elif problem == "dr":
         npoints_output = 100
         system = dr_system(T, npoints_output)
@@ -290,7 +310,8 @@ def main():
     elif nn == "resnet":
         net = dde.nn.ResNet(m + dim_x, 1, 128, 2, activation, initializer)
 
-    run(problem, system, space, T, m, nn, net, lr, epochs, num_train, num_test)
+    gen_data(system, space, m, nn, num_train, num_test)
+    # train(problem, system, space, T, m, nn, net, lr, epochs)
 
 
 if __name__ == "__main__":
