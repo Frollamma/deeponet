@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 
@@ -128,12 +129,13 @@ for i in range(n_a0):
 # X_y_train = np.loadtxt('X_y_train.txt')
 # Y_train = np.loadtxt('Y_train.txt')
 data_path = "data/"
+os.makedirs(data_path, exist_ok=True)
 np.savez_compressed(
-    data_path + "train.npz", X_u_train=X_u_train, X_y_train=X_y_train, Y_train=Y_train
+    data_path + "train.npz", X_train0=X_u_train, X_train1=X_y_train, y_train=Y_train
 )
 np.savez_compressed(
-    data_path + "test.npz", X_u_test=X_u_test, X_y_test=X_y_test, Y_test=Y_test
+    data_path + "test.npz", X_test0=X_u_test, X_test1=X_y_test, y_test=Y_test
 )
 np.savez_compressed(
-    data_path + "test0.npz", X_u_test=X_u_test0, X_y_test=X_y_test0, Y_test=Y_test0
+    data_path + "test0.npz", X_test0=X_u_test0, X_test1=X_y_test0, y_test=Y_test0
 )
